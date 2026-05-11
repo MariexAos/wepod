@@ -1,0 +1,11 @@
+/bin/
+/dist/
+*.test
+*.out
+coverage.txt
+.idea/
+.vscode/
+debug.log
+
+# legacy reference implementation, not part of the Go project
+wechat-multi.sh
