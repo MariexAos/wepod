@@ -24,17 +24,29 @@ collapses the whole workflow into a single keyboard-driven dashboard.
 
 ## Install
 
-### Pre-built binary (recommended)
-
-Grab the latest release for your architecture:
+### One-liner (recommended)
 
 ```bash
-# Apple Silicon
-curl -L https://github.com/MariexAos/wepod/releases/latest/download/wepod-darwin-arm64.tar.gz | tar xz
-sudo install -m 0755 wepod /usr/local/bin/wepod
+curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash
+```
 
-# Intel
-curl -L https://github.com/MariexAos/wepod/releases/latest/download/wepod-darwin-amd64.tar.gz | tar xz
+The script:
+
+1. Detects your CPU (Apple Silicon vs Intel)
+2. Downloads the matching release artifact and **verifies its sha256**
+3. Strips the `com.apple.quarantine` xattr and ad-hoc re-signs the binary, so macOS Gatekeeper does **not** show the "developer cannot be verified" dialog
+4. Installs to `/usr/local/bin/wepod` (sudo prompt if needed)
+
+Install a specific version: `bash -s v0.1.0` at the end. Install elsewhere: `PREFIX=$HOME/.local bash …`.
+
+### Manual download
+
+If you'd rather inspect each step yourself, grab the asset from [Releases](https://github.com/MariexAos/wepod/releases) and run:
+
+```bash
+tar xzf wepod-darwin-arm64.tar.gz   # or amd64
+xattr -d com.apple.quarantine wepod   # bypass Gatekeeper warning
+codesign --force --sign - wepod       # ad-hoc sign
 sudo install -m 0755 wepod /usr/local/bin/wepod
 ```
 
@@ -44,12 +56,18 @@ sudo install -m 0755 wepod /usr/local/bin/wepod
 go install github.com/mariexaos/wepod/cmd/wepod@latest
 ```
 
-Or:
+Or clone and build:
 
 ```bash
 git clone https://github.com/MariexAos/wepod
 cd wepod
-make install   # builds to bin/wepod and installs to /usr/local/bin
+make install
+```
+
+### Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/uninstall.sh | bash
 ```
 
 ## Usage
