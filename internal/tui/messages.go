@@ -30,6 +30,12 @@ type deleteDoneMsg struct {
 	Err error
 }
 
+type updateProgressMsg ops.UpdateProgressEvent
+type updateDoneMsg struct {
+	IDs []domain.InstanceID
+	Err error
+}
+
 type launchDoneMsg struct {
 	ID  domain.InstanceID
 	Err error

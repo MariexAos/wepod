@@ -10,6 +10,14 @@ type CreateProgressEvent struct {
 	Label string
 }
 
+// UpdateProgressEvent is emitted at each step of an Update operation.
+type UpdateProgressEvent struct {
+	ID    domain.InstanceID
+	Step  int
+	Total int
+	Label string
+}
+
 // DeleteProgressEvent is emitted as each copy is deleted.
 type DeleteProgressEvent struct {
 	ID       domain.InstanceID

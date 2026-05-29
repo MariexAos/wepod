@@ -77,6 +77,8 @@ func (m *Model) handleKeyList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.startStop()
 	case key.Matches(msg, k.Delete):
 		return m.openDeleteConfirm()
+	case key.Matches(msg, k.Update):
+		return m.openUpdateConfirm()
 	case key.Matches(msg, k.Icon):
 		return m.openIconPick()
 	}
@@ -141,6 +143,30 @@ func (m *Model) openDeleteConfirm() (tea.Model, tea.Cmd) {
 		ids:      clean,
 		withData: false,
 		kind:     confirmDelete,
+	}
+	m.mode = ModeConfirm
+	return m, nil
+}
+
+// openUpdateConfirm prepares the update confirmation for the selected copies.
+// The original install is the update source and is filtered out.
+func (m *Model) openUpdateConfirm() (tea.Model, tea.Cmd) {
+	ids := m.selectedOrCurrentIDs()
+	clean := make([]domain.InstanceID, 0, len(ids))
+	for _, id := range ids {
+		if !id.IsOriginal() {
+			clean = append(clean, id)
+		}
+	}
+	if len(clean) == 0 {
+		m.setErr("update", errNoUpdatable)
+		return m, nil
+	}
+	m.confirm = confirmState{
+		title: "更新副本",
+		body:  updateBody(clean),
+		ids:   clean,
+		kind:  confirmUpdate,
 	}
 	m.mode = ModeConfirm
 	return m, nil
