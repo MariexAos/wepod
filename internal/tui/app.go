@@ -66,6 +66,8 @@ type Service interface {
 	Create(ctx context.Context, id domain.InstanceID) error
 	Delete(ctx context.Context, id domain.InstanceID, withData bool) error
 	DeleteMany(ctx context.Context, ids []domain.InstanceID, withData bool) error
+	Update(ctx context.Context, id domain.InstanceID) error
+	UpdateMany(ctx context.Context, ids []domain.InstanceID) error
 	Launch(ctx context.Context, inst domain.Instance) error
 	Stop(ctx context.Context, inst domain.Instance) error
 	StopMany(ctx context.Context, insts []domain.Instance) error
@@ -240,6 +242,26 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.setErr("delete", msg.Err)
 		} else {
 			m.setToast(fmt.Sprintf("已删除 %d 个副本", len(msg.IDs)))
+		}
+		m.selected = map[domain.InstanceID]bool{}
+		return m, m.loadInstancesCmd()
+
+	case updateProgressMsg:
+		m.mode = ModeBusy
+		m.busy = busyState{
+			title: fmt.Sprintf("更新 WeChat%d", msg.ID),
+			step:  msg.Step,
+			total: msg.Total,
+			label: msg.Label,
+		}
+		return m, nil
+
+	case updateDoneMsg:
+		m.mode = ModeList
+		if msg.Err != nil {
+			m.setErr("update", msg.Err)
+		} else {
+			m.setToast(fmt.Sprintf("已更新 %d 个副本", len(msg.IDs)))
 		}
 		m.selected = map[domain.InstanceID]bool{}
 		return m, m.loadInstancesCmd()

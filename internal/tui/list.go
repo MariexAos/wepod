@@ -75,7 +75,7 @@ func (m *Model) renderRow(idx int, inst domain.Instance) string {
 
 func (m *Model) renderFooter() string {
 	s := m.styles
-	help := "↑↓ 移动 · space 选 · enter 启动 · n 新建 · d 删 · s 停 · i 图标 · r 刷新 · ? 帮助 · q 退出"
+	help := "↑↓ 移动 · space 选 · enter 启动 · n 新建 · d 删 · s 停 · u 更新 · i 图标 · r 刷新 · ? 帮助 · q 退出"
 	var toast string
 	if m.toast != "" {
 		if m.toastErr {

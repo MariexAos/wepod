@@ -25,6 +25,7 @@ type fakeService struct {
 
 	createCalls []domain.InstanceID
 	deleteCalls [][]domain.InstanceID
+	updateCalls [][]domain.InstanceID
 	launchCalls []domain.InstanceID
 	stopCalls   []domain.InstanceID
 	iconCalls   []iconCall
@@ -56,6 +57,20 @@ func (f *fakeService) DeleteMany(_ context.Context, ids []domain.InstanceID, _ b
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.deleteCalls = append(f.deleteCalls, ids)
+	return nil
+}
+
+func (f *fakeService) Update(_ context.Context, id domain.InstanceID) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.updateCalls = append(f.updateCalls, []domain.InstanceID{id})
+	return nil
+}
+
+func (f *fakeService) UpdateMany(_ context.Context, ids []domain.InstanceID) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.updateCalls = append(f.updateCalls, ids)
 	return nil
 }
 
@@ -321,6 +336,49 @@ func TestConfirmDeleteFlowCallsDeleteMany(t *testing.T) {
 	got := svc.deleteCalls[0]
 	if len(got) != 2 || got[0] != 2 || got[1] != 3 {
 		t.Errorf("deleted ids = %v, want [2 3]", got)
+	}
+}
+
+func TestConfirmUpdateFlowCallsUpdateMany(t *testing.T) {
+	cfg := domain.DefaultConfig("/Users/t")
+	a := cfg.Original()
+	b, _ := cfg.Copy(2)
+	c, _ := cfg.Copy(3)
+	m, svc := newTestModel(t, []domain.Instance{a, b, c})
+
+	// Select 2 and 3, press u, press y.
+	m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m.Update(tea.KeyMsg{Type: tea.KeySpace})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+	drainCmd(t, m, cmd)
+	if m.Mode() != tui.ModeConfirm {
+		t.Fatalf("after u: mode = %s, want confirm; view=\n%s", m.Mode(), m.View())
+	}
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	drainCmd(t, m, cmd)
+
+	if len(svc.updateCalls) != 1 {
+		t.Fatalf("updateCalls = %v, want 1 batch", svc.updateCalls)
+	}
+	got := svc.updateCalls[0]
+	if len(got) != 2 || got[0] != 2 || got[1] != 3 {
+		t.Errorf("updated ids = %v, want [2 3]", got)
+	}
+}
+
+func TestUpdateOnOriginalOnlyShowsError(t *testing.T) {
+	cfg := domain.DefaultConfig("/Users/t")
+	m, svc := newTestModel(t, []domain.Instance{cfg.Original()})
+
+	// Cursor on the original; pressing u must not open a confirm or call update.
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+	if m.Mode() != tui.ModeList {
+		t.Errorf("mode = %s, want list (no updatable copies)", m.Mode())
+	}
+	if len(svc.updateCalls) != 0 {
+		t.Errorf("updateCalls = %v, want none", svc.updateCalls)
 	}
 }
 

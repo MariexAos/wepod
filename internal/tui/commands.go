@@ -28,6 +28,8 @@ func (s *ProgramSink) Send(v any) {
 		s.p.Send(createProgressMsg(ev))
 	case ops.DeleteProgressEvent:
 		s.p.Send(deleteProgressMsg(ev))
+	case ops.UpdateProgressEvent:
+		s.p.Send(updateProgressMsg(ev))
 	case ops.IconApplyEvent:
 		s.p.Send(iconProgressMsg(ev))
 	default:
@@ -46,6 +48,13 @@ func (m *Model) deleteManyCmd(ids []domain.InstanceID, withData bool) tea.Cmd {
 	return func() tea.Msg {
 		err := m.deps.Service.DeleteMany(m.ctx, ids, withData)
 		return deleteDoneMsg{IDs: ids, Err: err}
+	}
+}
+
+func (m *Model) updateManyCmd(ids []domain.InstanceID) tea.Cmd {
+	return func() tea.Msg {
+		err := m.deps.Service.UpdateMany(m.ctx, ids)
+		return updateDoneMsg{IDs: ids, Err: err}
 	}
 }
 

@@ -15,6 +15,7 @@ type confirmKind int
 
 const (
 	confirmDelete confirmKind = iota
+	confirmUpdate
 )
 
 type confirmState struct {
@@ -28,6 +29,7 @@ type confirmState struct {
 
 var (
 	errNoDeletable   = errors.New("当前选中项无可删除副本（原版不可删）")
+	errNoUpdatable   = errors.New("当前选中项无可更新副本（原版即更新来源）")
 	errNoIconTargets = errors.New("当前选中项无可换图标副本（原版不可换）")
 )
 
@@ -57,6 +59,11 @@ func (m *Model) executeConfirm() (tea.Model, tea.Cmd) {
 		m.mode = ModeBusy
 		m.busy = busyState{title: "删除中", total: len(ids)}
 		return m, m.deleteManyCmd(ids, withData)
+	case confirmUpdate:
+		ids := append([]domain.InstanceID(nil), m.confirm.ids...)
+		m.mode = ModeBusy
+		m.busy = busyState{title: "更新中", total: len(ids)}
+		return m, m.updateManyCmd(ids)
 	}
 	m.mode = ModeList
 	return m, nil
@@ -69,6 +76,16 @@ func deleteBody(ids []domain.InstanceID) string {
 		fmt.Fprintf(&sb, "  • WeChat%d\n", id)
 	}
 	sb.WriteString("\n副本会移到 ~/.Trash/wepod-undo/ — 5 秒内可手动 mv 回去。")
+	return sb.String()
+}
+
+func updateBody(ids []domain.InstanceID) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "将用当前 WeChat.app 重建 %d 个副本：\n", len(ids))
+	for _, id := range ids {
+		fmt.Fprintf(&sb, "  • WeChat%d\n", id)
+	}
+	sb.WriteString("\n会保留各副本的 Bundle ID、名称与自定义图标。\n请先退出对应副本——更新会覆盖其 .app。")
 	return sb.String()
 }
 

@@ -15,7 +15,8 @@ collapses the whole workflow into a single keyboard-driven dashboard.
 ## Features
 
 - **Single-screen dashboard** — every install (original + copies) on one view, with live process state, bundle ID, and selection markers
-- **One-keystroke ops** — create / delete / launch / stop / icon-swap, all single keys
+- **One-keystroke ops** — create / delete / launch / stop / update / icon-swap, all single keys
+- **Manual update** — rebuild any copy from the current `/Applications/WeChat.app` after WeChat upgrades, keeping its bundle ID, name, and custom icon
 - **Multi-select** — operate on any subset of copies, not just one at a time
 - **Live state** — process detection refreshes every 1.5 s via `pgrep`
 - **Soft delete** — copies move to `~/.Trash/wepod-undo/` before they're gone; restore with `mv` if you slip
@@ -90,6 +91,7 @@ and `chown` against `/Applications`). After that the TUI takes over.
 | `n` | New copy (form prefilled with the next free ID) |
 | `d` | Delete selected (modal confirm; press `d` again to also wipe data dir) |
 | `s` | Stop selected (with nothing selected: stop everything) |
+| `u` | Update selected — rebuild from the current `WeChat.app`, preserving bundle ID / name / icon (quit the copy first) |
 | `i` | Apply a `.icns` icon to selected copies |
 | `r` | Rescan `/Applications` |
 | `?` | Help overlay |

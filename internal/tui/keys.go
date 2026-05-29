@@ -11,6 +11,7 @@ type keyMap struct {
 	New       key.Binding
 	Delete    key.Binding
 	Stop      key.Binding
+	Update    key.Binding
 	Icon      key.Binding
 	Refresh   key.Binding
 	Help      key.Binding
@@ -30,6 +31,7 @@ func defaultKeys() keyMap {
 		New:       key.NewBinding(key.WithKeys("n"), key.WithHelp("n", "new copy")),
 		Delete:    key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete")),
 		Stop:      key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "stop")),
+		Update:    key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "update")),
 		Icon:      key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "icon")),
 		Refresh:   key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "refresh")),
 		Help:      key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
