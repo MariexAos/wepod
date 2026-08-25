@@ -38,24 +38,27 @@ func (s *ProgramSink) Send(v any) {
 }
 
 func (m *Model) createCmd(id domain.InstanceID) tea.Cmd {
-	return func() tea.Msg {
+	next := func() tea.Msg {
 		err := m.deps.Service.Create(m.ctx, id)
 		return createDoneMsg{ID: id, Err: err}
 	}
+	return m.withSudo(next)
 }
 
 func (m *Model) deleteManyCmd(ids []domain.InstanceID, withData bool) tea.Cmd {
-	return func() tea.Msg {
+	next := func() tea.Msg {
 		err := m.deps.Service.DeleteMany(m.ctx, ids, withData)
 		return deleteDoneMsg{IDs: ids, Err: err}
 	}
+	return m.withSudo(next)
 }
 
 func (m *Model) updateManyCmd(ids []domain.InstanceID) tea.Cmd {
-	return func() tea.Msg {
+	next := func() tea.Msg {
 		err := m.deps.Service.UpdateMany(m.ctx, ids)
 		return updateDoneMsg{IDs: ids, Err: err}
 	}
+	return m.withSudo(next)
 }
 
 func (m *Model) launchCmd(inst domain.Instance) tea.Cmd {
@@ -73,13 +76,25 @@ func (m *Model) stopManyCmd(insts []domain.Instance) tea.Cmd {
 }
 
 func (m *Model) applyIconCmd(insts []domain.Instance, iconPath string) tea.Cmd {
-	return func() tea.Msg {
+	next := func() tea.Msg {
 		err := m.deps.Service.ApplyIconMany(m.ctx, insts, iconPath)
 		ids := make([]domain.InstanceID, len(insts))
 		for i, inst := range insts {
 			ids[i] = inst.ID
 		}
 		return iconAppliedMsg{IDs: ids, Err: err}
+	}
+	return m.withSudo(next)
+}
+
+// withSudo checks for a cached credential immediately before a privileged
+// operation. Dry-run bypasses authentication because it makes no changes.
+func (m *Model) withSudo(next tea.Cmd) tea.Cmd {
+	if m.deps.Service.DryRun() {
+		return next
+	}
+	return func() tea.Msg {
+		return sudoCheckedMsg{Next: next, Err: m.deps.Sudo.Ensure(m.ctx)}
 	}
 }
 

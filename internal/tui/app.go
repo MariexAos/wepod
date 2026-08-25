@@ -117,6 +117,11 @@ type Model struct {
 	icon    iconPickState
 	busy    busyState
 
+	// sudoPending is waiting for authentication. sudoRetry keeps the in-flight
+	// privileged command so an expired credential can be refreshed and retried.
+	sudoPending tea.Cmd
+	sudoRetry   tea.Cmd
+
 	toast         string
 	toastErr      bool
 	toastDeadline time.Time
@@ -190,22 +195,32 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Batch(m.refreshRuntimeCmd(), runtimeTick())
 
-	case errMsg:
-		m.setErr(msg.Op, msg.Err)
-		// If sudo is required, suspend the TUI and prompt.
+	case sudoCheckedMsg:
+		if msg.Err == nil {
+			m.sudoRetry = msg.Next
+			return m, msg.Next
+		}
 		if errors.Is(msg.Err, sudo.ErrNeedsPrompt) {
+			m.sudoPending = msg.Next
 			return m, promptSudoCmd()
 		}
+		m.mode = ModeList
+		m.setErr("sudo", msg.Err)
 		return m, nil
 
 	case sudoRefreshedMsg:
 		if msg.Err != nil {
+			m.mode = ModeList
+			m.sudoPending = nil
 			m.setErr("sudo", msg.Err)
 			return m, nil
 		}
 		m.deps.Sudo.Refreshed()
 		m.setToast("已认证 sudo")
-		return m, nil
+		next := m.sudoPending
+		m.sudoPending = nil
+		m.sudoRetry = next
+		return m, next
 
 	case createProgressMsg:
 		m.mode = ModeBusy
@@ -220,10 +235,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case createDoneMsg:
 		m.mode = ModeList
 		if msg.Err != nil {
+			if errors.Is(msg.Err, sudo.ErrNeedsPrompt) {
+				return m, m.retryAfterSudo()
+			}
 			m.setErr("create", msg.Err)
 		} else {
 			m.setToast(fmt.Sprintf("WeChat%d 创建完成", msg.ID))
 		}
+		m.sudoRetry = nil
 		return m, m.loadInstancesCmd()
 
 	case deleteProgressMsg:
@@ -239,10 +258,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case deleteDoneMsg:
 		m.mode = ModeList
 		if msg.Err != nil {
+			if errors.Is(msg.Err, sudo.ErrNeedsPrompt) {
+				return m, m.retryAfterSudo()
+			}
 			m.setErr("delete", msg.Err)
 		} else {
 			m.setToast(fmt.Sprintf("已删除 %d 个副本", len(msg.IDs)))
 		}
+		m.sudoRetry = nil
 		m.selected = map[domain.InstanceID]bool{}
 		return m, m.loadInstancesCmd()
 
@@ -259,10 +282,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case updateDoneMsg:
 		m.mode = ModeList
 		if msg.Err != nil {
+			if errors.Is(msg.Err, sudo.ErrNeedsPrompt) {
+				return m, m.retryAfterSudo()
+			}
 			m.setErr("update", msg.Err)
 		} else {
 			m.setToast(fmt.Sprintf("已更新 %d 个副本", len(msg.IDs)))
 		}
+		m.sudoRetry = nil
 		m.selected = map[domain.InstanceID]bool{}
 		return m, m.loadInstancesCmd()
 
@@ -295,10 +322,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case iconAppliedMsg:
 		m.mode = ModeList
 		if msg.Err != nil {
+			if errors.Is(msg.Err, sudo.ErrNeedsPrompt) {
+				return m, m.retryAfterSudo()
+			}
 			m.setErr("icon", msg.Err)
 		} else {
 			m.setToast(fmt.Sprintf("已应用图标到 %d 个副本", len(msg.IDs)))
 		}
+		m.sudoRetry = nil
 		return m, nil
 
 	case iconsLoadedMsg:
@@ -437,6 +468,11 @@ func promptSudoCmd() tea.Cmd {
 	return tea.ExecProcess(c, func(err error) tea.Msg {
 		return sudoRefreshedMsg{Err: err}
 	})
+}
+
+func (m *Model) retryAfterSudo() tea.Cmd {
+	m.sudoPending = m.sudoRetry
+	return promptSudoCmd()
 }
 
 // overlay composes a modal centered over the base view.

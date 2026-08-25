@@ -125,10 +125,17 @@ func (f *fakeService) RefreshRuntime(_ context.Context, _ []domain.Instance) (ma
 	return out, nil
 }
 
-type fakeSudo struct{ refreshed int }
+type fakeSudo struct {
+	ensured   int
+	refreshed int
+	ensureErr error
+}
 
-func (f *fakeSudo) Ensure(context.Context) error { return nil }
-func (f *fakeSudo) Refreshed()                   { f.refreshed++ }
+func (f *fakeSudo) Ensure(context.Context) error {
+	f.ensured++
+	return f.ensureErr
+}
+func (f *fakeSudo) Refreshed() { f.refreshed++ }
 
 type fakeScanner struct{ items []domain.Instance }
 
@@ -207,6 +214,74 @@ func TestInitialScanPopulatesInstances(t *testing.T) {
 
 	if got, want := len(m.Instances()), 2; got != want {
 		t.Errorf("got %d instances, want %d", got, want)
+	}
+}
+
+func TestReadOnlyAndLaunchDoNotCheckSudo(t *testing.T) {
+	cfg := domain.DefaultConfig("/Users/t")
+	svc := &fakeService{cfg: cfg}
+	sudo := &fakeSudo{}
+	m := tui.New(tui.Deps{
+		Service: svc,
+		Sudo:    sudo,
+		Scanner: &fakeScanner{items: []domain.Instance{cfg.Original()}},
+	})
+	drainCmd(t, m, m.Init())
+
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	drainCmd(t, m, cmd)
+
+	if sudo.ensured != 0 {
+		t.Fatalf("sudo Ensure calls = %d, want 0", sudo.ensured)
+	}
+	if len(svc.launchCalls) != 1 {
+		t.Fatalf("launch calls = %v, want one call", svc.launchCalls)
+	}
+}
+
+func TestCreateChecksSudoOnDemand(t *testing.T) {
+	cfg := domain.DefaultConfig("/Users/t")
+	svc := &fakeService{cfg: cfg}
+	sudo := &fakeSudo{}
+	m := tui.New(tui.Deps{
+		Service: svc,
+		Sudo:    sudo,
+		Scanner: &fakeScanner{items: []domain.Instance{cfg.Original()}},
+	})
+	drainCmd(t, m, m.Init())
+
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	drainCmd(t, m, cmd)
+
+	if sudo.ensured != 1 {
+		t.Fatalf("sudo Ensure calls = %d, want 1", sudo.ensured)
+	}
+	if len(svc.createCalls) != 1 || svc.createCalls[0] != 2 {
+		t.Fatalf("create calls = %v, want [2]", svc.createCalls)
+	}
+}
+
+func TestDryRunCreateDoesNotCheckSudo(t *testing.T) {
+	cfg := domain.DefaultConfig("/Users/t")
+	svc := &fakeService{cfg: cfg, dryRun: true}
+	sudo := &fakeSudo{}
+	m := tui.New(tui.Deps{
+		Service: svc,
+		Sudo:    sudo,
+		Scanner: &fakeScanner{items: []domain.Instance{cfg.Original()}},
+	})
+	drainCmd(t, m, m.Init())
+
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	drainCmd(t, m, cmd)
+
+	if sudo.ensured != 0 {
+		t.Fatalf("sudo Ensure calls = %d, want 0", sudo.ensured)
+	}
+	if len(svc.createCalls) != 1 {
+		t.Fatalf("create calls = %v, want one dry-run call", svc.createCalls)
 	}
 }
 

@@ -1,7 +1,7 @@
 // Package sudo wraps a Runner with sudo timestamp management.
 //
 // Workflow:
-//  1. The TUI calls Ensure() at startup. If the timestamp is fresh, it returns nil.
+//  1. The TUI calls Ensure() before a privileged operation. If the timestamp is fresh, it returns nil.
 //  2. If expired, Ensure() returns ErrNeedsPrompt. The caller should suspend the TUI,
 //     run an interactive `sudo -v` (e.g. via tea.ExecProcess), then call Refreshed().
 //  3. Run / Stream prepend `sudo -n` (non-interactive) and surface ErrNeedsPrompt

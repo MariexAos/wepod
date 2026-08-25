@@ -77,8 +77,10 @@ curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/uninst
 wepod
 ```
 
-You'll be prompted for your sudo password once (needed for `cp -R`, `codesign`,
-and `chown` against `/Applications`). After that the TUI takes over.
+Browsing, launching, and stopping WeChat do not require sudo. You'll only be
+prompted for your sudo password when an operation needs to modify an app bundle
+under `/Applications` (create, update, delete, or icon swap). `--dry-run` never
+prompts because it does not modify the filesystem.
 
 ### Key bindings
 

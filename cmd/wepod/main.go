@@ -2,7 +2,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -82,16 +81,6 @@ func main() {
 	prog := tea.NewProgram(model, tea.WithAltScreen())
 	svc.SetSink(tui.NewProgramSink(prog))
 
-	// Pre-flight sudo: if needed, suspend and prompt before the TUI starts.
-	if err := sess.Ensure(context.Background()); err != nil {
-		// Run sudo -v in the foreground before launching the TUI.
-		if err := promptSudoBlocking(); err != nil {
-			fmt.Fprintf(os.Stderr, "sudo authentication failed: %v\n", err)
-			os.Exit(2)
-		}
-		sess.Refreshed()
-	}
-
 	if _, err := prog.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "tea: %v\n", err)
 		os.Exit(1)
@@ -126,19 +115,4 @@ func setupDebugLog() (func(), error) {
 	}
 	log.SetOutput(f)
 	return func() { _ = f.Close() }, nil
-}
-
-func promptSudoBlocking() error {
-	// Run sudo -v inheriting the terminal so the user can type their password
-	// before the TUI takes over.
-	fmt.Println("Authenticating sudo (required for installing copies):")
-	return runInteractive("sudo", "-v")
-}
-
-func runInteractive(name string, args ...string) error {
-	cmd := newExecCmd(name, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }

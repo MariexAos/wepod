@@ -3,6 +3,8 @@ package tui
 import (
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/mariexaos/wepod/internal/domain"
 	"github.com/mariexaos/wepod/internal/ops"
 )
@@ -60,8 +62,9 @@ type sudoRefreshedMsg struct {
 	Err error
 }
 
-type runtimeTickMsg time.Time
-type errMsg struct {
-	Op  string
-	Err error
+type sudoCheckedMsg struct {
+	Next tea.Cmd
+	Err  error
 }
+
+type runtimeTickMsg time.Time
