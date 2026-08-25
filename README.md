@@ -38,7 +38,8 @@ The script:
 3. Strips the `com.apple.quarantine` xattr and ad-hoc re-signs the binary, so macOS Gatekeeper does **not** show the "developer cannot be verified" dialog
 4. Installs to `/usr/local/bin/wepod` (sudo prompt if needed)
 
-Install a specific version: `bash -s v0.1.0` at the end. Install elsewhere: `PREFIX=$HOME/.local bash …`.
+Install a specific version: append `bash -s -- v0.3.0`. Install without writing
+to a system directory: use `PREFIX=$HOME/.local bash …`.
 
 ### Manual download
 

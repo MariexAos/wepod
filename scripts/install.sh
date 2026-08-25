@@ -7,7 +7,7 @@
 #
 # 用法：
 #   curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash -s v0.1.0
+#   curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash -s -- v0.3.0
 #   PREFIX=$HOME/.local ./install.sh
 #
 set -euo pipefail
@@ -82,5 +82,6 @@ fi
 
 green "✓ wepod 已安装到 $dest"
 echo
-echo "运行：  wepod"
+echo "运行：  $dest"
+echo "提示：  浏览、启动和停止微信无需 sudo；修改 /Applications 中的副本时才会按需认证。"
 echo "卸载：  curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/uninstall.sh | bash"
