@@ -7,7 +7,7 @@
 #
 # 用法：
 #   curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash -s -- v0.3.0
+#   curl -fsSL https://raw.githubusercontent.com/MariexAos/wepod/main/scripts/install.sh | bash -s -- v0.3.1
 #   PREFIX=$HOME/.local ./install.sh
 #
 set -euo pipefail
@@ -70,10 +70,15 @@ xattr -d com.apple.quarantine "$tmp/wepod" 2>/dev/null || true
 codesign --force --sign - "$tmp/wepod" >/dev/null 2>&1 || true
 
 # 安装
-dest="$PREFIX/bin/wepod"
-mkdir -p "$PREFIX/bin" 2>/dev/null || true
+bin_dir="$PREFIX/bin"
+dest="$bin_dir/wepod"
 
-if [ -w "$PREFIX/bin" ]; then
+if ! mkdir -p "$bin_dir" 2>/dev/null; then
+    info "需要 sudo 创建 $bin_dir"
+    sudo install -d -m 0755 "$bin_dir"
+fi
+
+if [ -w "$bin_dir" ]; then
     install -m 0755 "$tmp/wepod" "$dest"
 else
     info "需要 sudo 写入 $dest"
